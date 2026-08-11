@@ -56,6 +56,8 @@ void handleLedData();
 void setLed(bool state);
 void printWifi();
 
+void addCorsHeaders();
+
 // LED
 const int ledPin = 23;
 bool outputState;
@@ -417,6 +419,8 @@ void handleSensor()
   json += humidity;
   json += "}";
 
+  addCorsHeaders();
+
   // server.send(200, "text/plain", String(temperature));
   server.send(200, "application/json", json);
 }
@@ -427,6 +431,7 @@ void handleLedOn()
   outputState = true;
   setLed(outputState);
 
+  addCorsHeaders();
   server.send(200, "text/plain", "LED is ON");
 }
 
@@ -436,6 +441,7 @@ void handleLedOff()
   outputState = false;
   setLed(outputState);
 
+  addCorsHeaders();
   server.send(200, "text/plain", "LED is OFF");
 }
 
@@ -459,5 +465,12 @@ void handleLedData()
   json += outputState ? "true" : "false";
   json += "}";
 
+  addCorsHeaders();
+
   server.send(200, "application/json", json);
+}
+
+void addCorsHeaders()
+{
+  server.sendHeader("Access-Control-Allow-Origin", "*");
 }

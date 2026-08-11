@@ -473,4 +473,5 @@ void handleLedData()
 void addCorsHeaders()
 {
   server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Access-Control-Allow-Private-Network", "true");
 }

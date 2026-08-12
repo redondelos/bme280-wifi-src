@@ -43,8 +43,8 @@ void printData(float temperature, float humidity, float atmPressure);
 // Create a web server on port 80
 WebServer server(80);
 
-const char *ssid = "chuck";
-const char *password = "cpuente2026";
+const char *ssid = "NETLIFE-PUENTE";
+const char *password = "LosElenes1996";
 void handleRoot();
 void handleControlPanel();
 void handleCSS();
@@ -195,6 +195,7 @@ void setup()
 
   // Tell the server what to do when someone visits "/"
   server.on("/", handleRoot);
+  server.on("/index.html", handleRoot);
 
   // Tell the server what to do when someone visits "/"
   server.on("/control-panel.html", handleControlPanel);

@@ -197,7 +197,7 @@ void setup()
   server.on("/", handleRoot);
 
   // Tell the server what to do when someone visits "/"
-  server.on("/control-panel", handleControlPanel);
+  server.on("/control-panel.html", handleControlPanel);
 
   // Tell the server what to do when someone visits "/styles.css"
   // and /normalize.css
@@ -338,7 +338,7 @@ void handleRoot()
 
 void handleControlPanel()
 {
-  Serial.println("Someone requested the homepage.");
+  Serial.println("Someone requested the control panel page.");
 
   File file = LittleFS.open("/control-panel.html", "r");
 

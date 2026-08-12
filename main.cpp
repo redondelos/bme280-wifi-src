@@ -43,9 +43,10 @@ void printData(float temperature, float humidity, float atmPressure);
 // Create a web server on port 80
 WebServer server(80);
 
-const char *ssid = "NETLIFE-PUENTE";
-const char *password = "LosElenes1996";
+const char *ssid = "chuck";
+const char *password = "cpuente2026";
 void handleRoot();
+void handleControlPanel();
 void handleCSS();
 void handleNormalize();
 void handleJS();
@@ -96,87 +97,6 @@ void setup()
 {
   Serial.begin(9600);
 
-  // BME 280 sensor
-  // ---------------------------------------------------------------
-  Wire.begin(21, 22); // SDA, SCL
-  if (!bme.begin(0x76))
-  {
-    Serial.println("BME280 not found. Check wiring/address.");
-    while (1)
-      ;
-  }
-  Serial.println("BME280 ready.");
-  // ---------------------------------------------------------------
-
-  // DS18B20 Sensor
-  // ---------------------------------------------------------------
-  sensors.begin();
-  // ---------------------------------------------------------------
-
-  //                          WiFi Configuration
-  // ===============================================================
-
-  // Connect to wifi
-  // ---------------------------------------------------------------
-  Serial.println("Connecting to Wi-Fi...");
-
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println();
-  Serial.println("Wifi Connected!");
-
-  Serial.print("ESP32 IP Address: ");
-  Serial.println(WiFi.localIP());
-
-  // LED
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);
-
-  // ---------------------------------------------------------------
-
-  //                          Webpage Configuration
-  // ===============================================================
-  // Start LittleFS
-  // ---------------------------------------------------------------
-  if (!LittleFS.begin(true))
-  {
-    Serial.println("LittleFS failed!");
-  }
-
-  // Tell the server what to do when someone visits "/"
-  server.on("/", handleRoot);
-
-  // Tell the server what to do when someone visits "/styles.css"
-  // and /normalize.css
-  server.on("/styles.css", handleCSS);
-  server.on("/normalize.css", handleNormalize);
-
-  // Tell the server what to do when someone visits "/script.js"
-  server.on("/script.js", handleJS);
-
-  // Tell the server what to do when someone visits "/temperature"
-  server.on("/bme280", handleSensor);
-
-  // Tell the server what to do when someone visits "/led/on"
-  server.on("/led/on", handleLedOn);
-
-  // Tell the server what to do when someone visits "/led/on"
-  server.on("/led/off", handleLedOff);
-
-  // Tell the server what to do when someone visits "/led/on"
-  server.on("/led/status", handleLedData);
-
-  // Start the web server
-  server.begin();
-
-  Serial.println("Web server started!");
-
   // Initialize screens
   // ---------------------------------------------------------------
   Wire.begin(21, 22, 100000);  // bus 0: SDA=21, SCL=22
@@ -208,14 +128,101 @@ void setup()
   screen2.setTextColor(WHITE);
 
   screen.setCursor(0, 0);
-  screen2.setCursor(0, 16);
-
   screen.print("BME280");
-  screen2.print("INITIALIZING");
+
+  screen.setTextSize(1);
+  screen.setCursor(0, 16);
+  screen.print("INITIALIZING");
+
+  screen2.setCursor(0, 0);
 
   screen.display();
-  screen2.display();
   // ---------------------------------------------------------------
+  // BME 280 sensor
+  // ---------------------------------------------------------------
+  Wire.begin(21, 22); // SDA, SCL
+  if (!bme.begin(0x76))
+  {
+    Serial.println("BME280 not found. Check wiring/address.");
+    while (1)
+      ;
+  }
+  Serial.println("BME280 ready.");
+  // ---------------------------------------------------------------
+
+  //                          WiFi Configuration
+  // ===============================================================
+
+  // Connect to wifi
+  // ---------------------------------------------------------------
+  Serial.println("Connecting to Wi-Fi...");
+  screen2.print("Connecting to WiFi...");
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+    screen2.setCursor(0, 8);
+    screen2.print(".");
+  }
+
+  Serial.println();
+  Serial.println("Wifi Connected!");
+  screen2.setCursor(0, 0);
+  screen2.clearDisplay();
+  screen2.print("WiFi Connected!");
+  screen2.display();
+
+  Serial.print("ESP32 IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  // LED
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+
+  // ---------------------------------------------------------------
+
+  //                          Webpage Configuration
+  // ===============================================================
+  // Start LittleFS
+  // ---------------------------------------------------------------
+  if (!LittleFS.begin(true))
+  {
+    Serial.println("LittleFS failed!");
+  }
+
+  // Tell the server what to do when someone visits "/"
+  server.on("/", handleRoot);
+
+  // Tell the server what to do when someone visits "/"
+  server.on("/control-panel", handleControlPanel);
+
+  // Tell the server what to do when someone visits "/styles.css"
+  // and /normalize.css
+  server.on("/styles.css", handleCSS);
+  server.on("/normalize.css", handleNormalize);
+
+  // Tell the server what to do when someone visits "/script.js"
+  server.on("/script.js", handleJS);
+
+  // Tell the server what to do when someone visits "/temperature"
+  server.on("/bme280", handleSensor);
+
+  // Tell the server what to do when someone visits "/led/on"
+  server.on("/led/on", handleLedOn);
+
+  // Tell the server what to do when someone visits "/led/on"
+  server.on("/led/off", handleLedOff);
+
+  // Tell the server what to do when someone visits "/led/on"
+  server.on("/led/status", handleLedData);
+
+  // Start the web server
+  server.begin();
+
+  Serial.println("Web server started!");
 
   delay(5000);
 }
@@ -322,6 +329,24 @@ void handleRoot()
     Serial.println("Could not open index.html");
 
     server.send(500, "text/plain", "Could not open index.html");
+
+    return;
+  }
+  server.streamFile(file, "text/html");
+  file.close();
+}
+
+void handleControlPanel()
+{
+  Serial.println("Someone requested the homepage.");
+
+  File file = LittleFS.open("/control-panel.html", "r");
+
+  if (!file)
+  {
+    Serial.println("Could not open control-panel.html");
+
+    server.send(500, "text/plain", "Could not open control-panel.html");
 
     return;
   }

@@ -54,14 +54,24 @@ void handleSensor();
 void handleLedOn();
 void handleLedOff();
 void handleLedData();
+void handleAutoMode();
+void handleManualMode();
+void handleModeStatus();
+void handleAutoActions(float temperature);
 void setLed(bool state);
 void printWifi();
 
 void addCorsHeaders();
 
+// Automatic or Manual Mode
+bool mode = true;
+
 // LED
 const int ledPin = 23;
 bool outputState;
+
+// Built in LED
+const int boardLed = 2;
 
 // Symbols
 const unsigned char tempIcon[] PROGMEM = {
@@ -182,6 +192,10 @@ void setup()
   pinMode(ledPin, OUTPUT);
   digitalWrite(ledPin, LOW);
 
+  // Built-in LED
+  pinMode(boardLed, OUTPUT);
+  digitalWrite(boardLed, LOW);
+
   // ---------------------------------------------------------------
 
   //                          Webpage Configuration
@@ -220,6 +234,15 @@ void setup()
   // Tell the server what to do when someone visits "/led/on"
   server.on("/led/status", handleLedData);
 
+  // Tell the server what to do when someone visits "/mode/auto"
+  server.on("/mode/auto", handleAutoMode);
+
+  // Tell the server what to do when someone visits "/mode/manual"
+  server.on("/mode/manual", handleManualMode);
+
+  // Tell the server what to do when someone visits "/mode/status"
+  server.on("/mode/status", handleModeStatus);
+
   // Start the web server
   server.begin();
 
@@ -243,9 +266,8 @@ void loop()
     // float atmPress = bme.readPressure() / 100.0F; // BME280 originally gives Pa. Divide by 100 to get hPa.
     float atmPress = bme.readPressure() / 133.322; // Divide by 133.322 to get mmHg
 
-    // DS18B20 Sensor
-    sensors.requestTemperatures();
-    float temp = sensors.getTempCByIndex(0);
+    // Send temperature data to Auto Mode Action function
+    handleAutoActions(roomTemp);
 
     screen.clearDisplay();
     screen2.clearDisplay();
@@ -494,6 +516,47 @@ void handleLedData()
   addCorsHeaders();
 
   server.send(200, "application/json", json);
+}
+
+void handleAutoMode()
+{
+  Serial.println("Someone requested /mode/auto");
+  mode = true;
+  addCorsHeaders();
+  server.send(200, "text/plain", "Mode set to MANUAL");
+}
+
+void handleManualMode()
+{
+  Serial.println("Someone requested /mode/manual");
+  mode = false;
+  addCorsHeaders();
+  server.send(200, "text/plain", "Mode set to AUTOMATIC");
+}
+
+void handleModeStatus()
+{
+  // Send value in .json format
+  String json = "{";
+  json += "\"MODE\":";
+  json += mode ? "true" : "false";
+  json += "}";
+
+  addCorsHeaders();
+
+  server.send(200, "application/json", json);
+}
+
+void handleAutoActions(float temperature)
+{
+  if (mode && temperature >= 25)
+  {
+    digitalWrite(boardLed, HIGH);
+  }
+  else
+  {
+    digitalWrite(boardLed, LOW);
+  }
 }
 
 void addCorsHeaders()

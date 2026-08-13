@@ -137,10 +137,10 @@ void setup()
     }
   }
 
-  screen.clearDisplay();
   screen2.clearDisplay();
+  screen.clearDisplay();
 
-  screen.setTextSize(2);
+  screen.setTextSize(1);
   screen2.setTextSize(1);
 
   screen.setTextColor(WHITE);
@@ -150,7 +150,7 @@ void setup()
   screen.print("BME280");
 
   screen.setTextSize(1);
-  screen.setCursor(0, 16);
+  screen.setCursor(0, 8);
   screen.print("INITIALIZING");
 
   screen2.setCursor(0, 0);
@@ -167,6 +167,10 @@ void setup()
       ;
   }
   Serial.println("BME280 ready.");
+
+  screen.setCursor(0, 16);
+  screen.print("SENSOR READY");
+  screen.display();
   // ---------------------------------------------------------------
 
   //                          WiFi Configuration
@@ -175,7 +179,6 @@ void setup()
   // Connect to wifi
   // ---------------------------------------------------------------
   Serial.println("Connecting to Wi-Fi...");
-  screen2.print("Connecting to WiFi...");
 
   WiFi.begin(ssid, password);
 
@@ -183,8 +186,10 @@ void setup()
   {
     delay(500);
     Serial.print(".");
-    screen2.setCursor(0, 8);
+    screen2.setCursor(0, 0);
+    screen2.print("Connecting to WiFi...");
     screen2.print(".");
+    screen2.display();
   }
 
   Serial.println();

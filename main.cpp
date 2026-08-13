@@ -45,6 +45,8 @@ WebServer server(80);
 
 const char *ssid = "chuck";
 const char *password = "cpuente2026";
+// const char *ssid = "NETLIFE-PUENTE";
+// const char *password = "LosElenes1996";
 void handleRoot();
 void handleControlPanel();
 void handleCSS();

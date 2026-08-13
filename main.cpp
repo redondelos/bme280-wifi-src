@@ -51,14 +51,22 @@ void handleCSS();
 void handleNormalize();
 void handleJS();
 void handleSensor();
+// LED
 void handleLedOn();
 void handleLedOff();
 void handleLedData();
+void setLed(bool state);
+// Auto and Manual Modes
 void handleAutoMode();
 void handleManualMode();
 void handleModeStatus();
 void handleAutoActions(float temperature);
-void setLed(bool state);
+// Built-in LED
+void handleLedOn_2();
+void handleLedOff_2();
+void handleLedData_2();
+void setBoardLed(boolean boardLedState);
+
 void printWifi();
 
 void addCorsHeaders();
@@ -72,6 +80,7 @@ bool outputState;
 
 // Built in LED
 const int boardLed = 2;
+bool boardLedState;
 
 // Symbols
 const unsigned char tempIcon[] PROGMEM = {
@@ -231,7 +240,7 @@ void setup()
   // Tell the server what to do when someone visits "/led/on"
   server.on("/led/off", handleLedOff);
 
-  // Tell the server what to do when someone visits "/led/on"
+  // Tell the server what to do when someone visits "/led/status"
   server.on("/led/status", handleLedData);
 
   // Tell the server what to do when someone visits "/mode/auto"
@@ -242,6 +251,15 @@ void setup()
 
   // Tell the server what to do when someone visits "/mode/status"
   server.on("/mode/status", handleModeStatus);
+
+  // Tell the server what to do when someone visits "/board-led/on"
+  server.on("/board-led/on", handleLedOn_2);
+
+  // Tell the server what to do when someone visits "/board-led/off"
+  server.on("/board-led/off", handleLedOff_2);
+
+  // Tell the server what to do when someone visits "/board-led/status"
+  server.on("/board-led/status", handleLedData_2);
 
   // Start the web server
   server.begin();
@@ -267,7 +285,10 @@ void loop()
     float atmPress = bme.readPressure() / 133.322; // Divide by 133.322 to get mmHg
 
     // Send temperature data to Auto Mode Action function
-    handleAutoActions(roomTemp);
+    if (mode)
+    {
+      handleAutoActions(roomTemp);
+    }
 
     screen.clearDisplay();
     screen2.clearDisplay();
@@ -523,7 +544,7 @@ void handleAutoMode()
   Serial.println("Someone requested /mode/auto");
   mode = true;
   addCorsHeaders();
-  server.send(200, "text/plain", "Mode set to MANUAL");
+  server.send(200, "text/plain", "Mode set to AUTO");
 }
 
 void handleManualMode()
@@ -531,7 +552,7 @@ void handleManualMode()
   Serial.println("Someone requested /mode/manual");
   mode = false;
   addCorsHeaders();
-  server.send(200, "text/plain", "Mode set to AUTOMATIC");
+  server.send(200, "text/plain", "Mode set to MANUAL");
 }
 
 void handleModeStatus()
@@ -549,7 +570,7 @@ void handleModeStatus()
 
 void handleAutoActions(float temperature)
 {
-  if (mode && temperature >= 25)
+  if (temperature >= 25)
   {
     digitalWrite(boardLed, HIGH);
   }
@@ -563,4 +584,50 @@ void addCorsHeaders()
 {
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.sendHeader("Access-Control-Allow-Private-Network", "true");
+}
+
+// Built-in LED
+void handleLedOn_2()
+{
+  Serial.println("Someone requested /board-led/on");
+  boardLedState = true;
+  setBoardLed(boardLedState);
+
+  addCorsHeaders();
+  server.send(200, "text/plain", "BOARD LED is ON");
+}
+
+void handleLedOff_2()
+{
+  Serial.println("Someone requested /board-led/off");
+  boardLedState = false;
+  setBoardLed(boardLedState);
+
+  addCorsHeaders();
+  server.send(200, "text/plain", "BOARD LED is OFF");
+}
+
+void handleLedData_2()
+{
+  // Send value in .json format
+  String json = "{";
+  json += "\"BOARD_LED\":";
+  json += boardLedState ? "true" : "false";
+  json += "}";
+
+  addCorsHeaders();
+
+  server.send(200, "application/json", json);
+}
+
+void setBoardLed(boolean boardLedState)
+{
+  if (boardLedState && !mode)
+  {
+    digitalWrite(boardLed, HIGH);
+  }
+  else
+  {
+    digitalWrite(boardLed, LOW);
+  }
 }

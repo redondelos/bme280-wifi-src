@@ -12,6 +12,9 @@
 #include <WebServer.h>
 #include <LittleFS.h>
 
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+
 // BME280 sensor
 #define SEALEVELPRESSURE_HPA (1013.25) // hPa
 Adafruit_BME280 bme;
@@ -73,6 +76,9 @@ void printWifi();
 
 void addCorsHeaders();
 
+// For Cloudflare API
+void sendSensorReading(float temperature, float humidity, float pressure);
+
 // Automatic or Manual Mode
 bool mode = true;
 
@@ -113,6 +119,14 @@ const unsigned char nowifi[] PROGMEM = {
 // Count seconds since program started
 const unsigned long INTERVAL = 1000; // ms
 unsigned long lastRun = 0;
+
+// Cloudflare API upload settings
+const char *API_URL = "https://bme280-api.carlos-puente-r.workers.dev/api/sensor";
+
+const unsigned long CLOUD_UPLOAD_INTERVAL = 60000; // 60 seconds
+unsigned long lastCloudUpload = 0;
+
+WiFiClientSecure secureClient;
 
 void setup()
 {
@@ -204,6 +218,9 @@ void setup()
   Serial.print("ESP32 IP Address: ");
   Serial.println(WiFi.localIP());
 
+  // Development-only: accepts the server certificate without verifying it.
+  secureClient.setInsecure();
+
   // LED
   pinMode(ledPin, OUTPUT);
   digitalWrite(ledPin, LOW);
@@ -290,6 +307,13 @@ void loop()
     float humidity = bme.readHumidity();
     // float atmPress = bme.readPressure() / 100.0F; // BME280 originally gives Pa. Divide by 100 to get hPa.
     float atmPress = bme.readPressure() / 133.322; // Divide by 133.322 to get mmHg
+
+    // Upload one reading to Cloudflare every 60 seconds.
+    if (millis() - lastCloudUpload >= CLOUD_UPLOAD_INTERVAL)
+    {
+      lastCloudUpload = millis();
+      sendSensorReading(roomTemp, humidity, atmPress);
+    }
 
     // Send temperature data to Auto Mode Action function
     if (mode)
@@ -637,4 +661,49 @@ void setBoardLed(boolean boardLedState)
   {
     digitalWrite(boardLed, LOW);
   }
+}
+
+void sendSensorReading(float temperature, float humidity, float pressure)
+{
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.println("Cloud upload skipped: Wi-Fi is not connected.");
+    return;
+  }
+
+  HTTPClient http;
+
+  String json = "{";
+  json += "\"temperature\":" + String(temperature, 2);
+  json += ",";
+  json += "\"humidity\":" + String(humidity, 2);
+  json += ",";
+  json += "\"pressure\":" + String(pressure, 2);
+  json += "}";
+
+  Serial.println("Sending sensor data to Cloudflare:");
+  Serial.println(json);
+
+  http.begin(secureClient, API_URL);
+  http.addHeader("Content-Type", "application/json");
+
+  int httpResponseCode = http.POST(json);
+
+  Serial.print("Cloudflare HTTP response code: ");
+  Serial.println(httpResponseCode);
+
+  if (httpResponseCode > 0)
+  {
+    String response = http.getString();
+
+    Serial.println("Cloudflare response body:");
+    Serial.println(response);
+  }
+  else
+  {
+    Serial.print("Cloud upload failed: ");
+    Serial.println(http.errorToString(httpResponseCode));
+  }
+
+  http.end();
 }

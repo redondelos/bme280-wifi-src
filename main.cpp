@@ -123,6 +123,9 @@ unsigned long lastRun = 0;
 // Cloudflare API upload settings
 const char *API_URL = "https://bme280-api.carlos-puente-r.workers.dev/api/sensor";
 
+// Keep this private. Do not commit it to GitHub.
+const char *SENSOR_API_KEY = "e11677d2105d2a1c29b49c5d798453e59c4cc946f270f90a8e8912c680cd1bb8";
+
 const unsigned long CLOUD_UPLOAD_INTERVAL = 60000; // 60 seconds
 unsigned long lastCloudUpload = 0;
 
@@ -686,6 +689,7 @@ void sendSensorReading(float temperature, float humidity, float pressure)
 
   http.begin(secureClient, API_URL);
   http.addHeader("Content-Type", "application/json");
+  http.addHeader("X-API-Key", SENSOR_API_KEY);
 
   int httpResponseCode = http.POST(json);
 

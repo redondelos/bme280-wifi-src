@@ -126,7 +126,7 @@ const char *API_URL = "https://bme280-api.carlos-puente-r.workers.dev/api/sensor
 // Keep this private. Do not commit it to GitHub.
 const char *SENSOR_API_KEY = "e11677d2105d2a1c29b49c5d798453e59c4cc946f270f90a8e8912c680cd1bb8";
 
-const unsigned long CLOUD_UPLOAD_INTERVAL = 60000; // 60 seconds
+const unsigned long CLOUD_UPLOAD_INTERVAL = 5000; // 60 seconds
 unsigned long lastCloudUpload = 0;
 
 WiFiClientSecure secureClient;
